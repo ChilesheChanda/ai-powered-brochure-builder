@@ -6,9 +6,10 @@ from dotenv import load_dotenv
 from bs4 import BeautifulSoup
 from openai import OpenAI
 
-# Load API key
-load_dotenv()
-api_key = os.getenv('OPENAI_API_KEY')
+# Get the OpenAI API key from Streamlit secrets
+api_key = st.secrets["OPENAI_API_KEY"]
+openai_client = OpenAI(api_key=api_key)
+
 if not api_key or not api_key.startswith('sk-'):
     st.error("Invalid OpenAI API key. Check your .env file.")
     st.stop()
