@@ -2,7 +2,6 @@ import streamlit as st
 import os
 import requests
 import json
-import ollama
 from dotenv import load_dotenv
 from bs4 import BeautifulSoup
 from openai import OpenAI
@@ -14,9 +13,9 @@ if not api_key or not api_key.startswith('sk-'):
     st.error("Invalid OpenAI API key. Check your .env file.")
     st.stop()
 
-USE_OPENAI = True  # Toggle here for OpenAI or Ollama
-MODEL = 'gpt-4o-mini' if USE_OPENAI else 'llama3.2:3b'
-openai_client = OpenAI(api_key=api_key) if USE_OPENAI else None
+# Initialize OpenAI client
+openai_client = OpenAI(api_key=api_key)
+MODEL = 'gpt-4o-mini'
 
 headers = {
     "User-Agent": "Mozilla/5.0"
@@ -65,28 +64,14 @@ class LLMClient:
 
         user_prompt = f"Links from {website.url}:\n{', '.join(website.links)}"
 
-        if USE_OPENAI:
-            response = openai_client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": link_system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ]
-            )
-            return json.loads(response.choices[0].message.content.strip())
-        else:
-            response = ollama.chat(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": link_system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ]
-            )
-            result = response.get("message", {}).get("content", "").strip()
-            try:
-                return json.loads(result)
-            except json.JSONDecodeError:
-                return {"links": []}
+        response = openai_client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {"role": "system", "content": link_system_prompt},
+                {"role": "user", "content": user_prompt}
+            ]
+        )
+        return json.loads(response.choices[0].message.content.strip())
 
     def generate_brochure(self, company_name, content, language):
         system_prompt = """
@@ -99,24 +84,14 @@ class LLMClient:
         Content:\n{content[:5000]}
         """
 
-        if USE_OPENAI:
-            response = openai_client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ]
-            )
-            return response.choices[0].message.content.strip()
-        else:
-            response = ollama.chat(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ]
-            )
-            return response.get("message", {}).get("content", "").strip()
+        response = openai_client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ]
+        )
+        return response.choices[0].message.content.strip()
 
 class BrochureGenerator:
     def __init__(self, company_name, url, language='English'):
@@ -143,16 +118,15 @@ def main():
     st.title("📄 AI-powered Brochure Builder")
 
     st.markdown("""
-💡 **AI-powered Brochure Builder** is your new digital copywriter! Just drop in a company name and website URL, and watch the magic happen. ✨  
-It fetches the content, filters out the fluff, and crafts a fun, snappy brochure perfect for clients, investors, and future hires. 🎯
+    💡 **AI-powered Brochure Builder** is your new digital copywriter! Just drop in a company name and website URL, and watch the magic happen. ✨  
+    It fetches the content, filters out the fluff, and crafts a fun, snappy brochure perfect for clients, investors, and future hires. 🎯
 
-🔍 Using clever scraping (thanks, BeautifulSoup!) and smart language models from **OpenAI** or **Ollama** 🧠, it dives into pages like *About*, *Careers*, and *Products*, skipping the boring legal stuff. 🚫📄
+    🔍 Using clever scraping (thanks, BeautifulSoup!) and smart language models from **OpenAI** 🧠, it dives into pages like *About*, *Careers*, and *Products*, skipping the boring legal stuff. 🚫📄
 
-🛠️ Built with cool tools like `OpenAI API`, `ollama`, and a touch of web scraping wizardry — it's made for devs with a bit of experience under their belt. 🧑‍💻💪
+    🛠️ Built with cool tools like `OpenAI API` and a touch of web scraping wizardry — it's made for devs with a bit of experience under their belt. 🧑‍💻💪
 
-🚀 Whether you're automating content or just hate writing brochures (who doesn’t?), this app’s got your back.
-""")
-
+    🚀 Whether you're automating content or just hate writing brochures (who doesn’t?), this app’s got your back.
+    """)
 
     company_name = st.text_input("Company Name", "Tour Eiffel")
     url = st.text_input("Website URL", "https://www.toureiffel.paris/fr")
