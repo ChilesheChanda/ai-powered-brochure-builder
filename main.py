@@ -2,7 +2,6 @@ import streamlit as st
 import os
 import requests
 import json
-from dotenv import load_dotenv
 from bs4 import BeautifulSoup
 from openai import OpenAI
 
